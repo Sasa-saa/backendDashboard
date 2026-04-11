@@ -1,0 +1,15 @@
+// Define a schema
+const userSchema = new mongoose.Schema({
+  name: String,
+  email: String,
+  age: Number
+});
+
+// Create a model
+const User = mongoose.model('User', userSchema);
+
+// Save a document
+const newUser = new User({ name: 'Alice', email: 'alice@example.com', age: 25 });
+newUser.save()
+  .then(() => console.log('User saved'))
+  .catch(err => console.error(err));
