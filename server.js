@@ -8,6 +8,7 @@ const authRouter = require("./routes/auth-route");
 const payrollRouter = require("./routes/payroll-route");
 const projectsRouter = require("./routes/projects-route");
 const taskRouter = require("./routes/task-route");
+const statsRouter = require("./routes/stats-route");
 const express = require("express");
 const app = express();
 const cors = require("cors");
@@ -15,7 +16,12 @@ const PORT = process.env.PORT || 5000;
 
 //middleware
 app.use(express.json());
-app.use(cors("*"));
+app.use(
+  cors({
+    origin: "http://localhost:5173",
+    credentials: true,
+  }),
+);
 app.use("/api/attendance", attendanceRouter);
 app.use("/api/dashboard", dashboardRouter);
 app.use("/api/employees", employeesRouter);
@@ -24,6 +30,7 @@ app.use("/api/auth", authRouter);
 app.use("/api/payroll", payrollRouter);
 app.use("/api/projects", projectsRouter);
 app.use("/api/tasks", taskRouter);
+app.use("/api/stats", statsRouter);
 
 //home route
 app.get("/", (req, res) => {
