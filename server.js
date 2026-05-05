@@ -7,7 +7,7 @@ const hiringRouter = require("./routes/hiring-route");
 const authRouter = require("./routes/auth-route");
 const payrollRouter = require("./routes/payroll-route");
 const projectsRouter = require("./routes/projects-route");
-const taskRouter = require("./routes/task-route");
+const classesRouter = require("./routes/classes-route");
 const statsRouter = require("./routes/stats-route");
 const express = require("express");
 const app = express();
@@ -29,7 +29,7 @@ app.use("/api/hiring", hiringRouter);
 app.use("/api/auth", authRouter);
 app.use("/api/payroll", payrollRouter);
 app.use("/api/projects", projectsRouter);
-app.use("/api/tasks", taskRouter);
+app.use("/api/classes", classesRouter);
 app.use("/api/stats", statsRouter);
 
 //home route
