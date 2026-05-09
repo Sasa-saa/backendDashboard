@@ -69,12 +69,15 @@ const payrollRouter = require("./routes/payroll-route");
 const projectsRouter = require("./routes/projects-route");
 const classesRouter = require("./routes/classes-route");
 const statsRouter = require("./routes/stats-route");
+// const automationBypass = require("./middleware/automationBypass");
 
 const app = express();
 const PORT = process.env.PORT || 5000;
 
+
 // Middleware
 app.use(express.json());
+
 
 // ✅ Allow both localhost and your deployed frontend domain
 const allowedOrigins = [
@@ -103,6 +106,11 @@ app.use("/api/stats", statsRouter);
 app.get("/", (req, res) => {
   res.send("Welcome to dashboard!");
 });
+
+// Protect a specific route
+// app.post("/api/internal-task", automationBypass, (req, res) => {
+//   res.json({ success: true, message: "Internal task executed" });
+// });
 
 app.listen(PORT, () => {
   console.log(`Server is running on port http://localhost:${PORT}`);
