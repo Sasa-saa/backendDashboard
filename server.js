@@ -87,7 +87,7 @@ const allowedOrigins = [
 
 app.use(cors({
   origin: allowedOrigins,
-  methods: ["GET", "POST", "PUT", "DELETE"],
+  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
   credentials: true,
 }));
 
@@ -112,6 +112,10 @@ app.get("/", (req, res) => {
 //   res.json({ success: true, message: "Internal task executed" });
 // });
 
-app.listen(PORT, () => {
-  console.log(`Server is running on port http://localhost:${PORT}`);
-});
+// app.listen(PORT, () => {
+//   console.log(`Server is running on port http://localhost:${PORT}`);
+// });
+
+
+// ✅ Add this instead
+module.exports = app;
