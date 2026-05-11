@@ -222,10 +222,11 @@ const PORT = process.env.PORT || 5000;
 // Middleware
 app.use(express.json());
 
+
 // ✅ CORS Configuration - Compatible with Express 5
 const allowedOrigins = [
   "http://localhost:5173",
-  "https://backend-dashboard-sigma-pearl.vercel.app" // <-- CHANGE THIS to your actual frontend URL
+  "https://backend-dashboard-gxz9mrcps-kingsanbo-9753s-projects.vercel.app" // <-- CHANGE THIS to your actual frontend URL
 ];
 
 app.use(cors({
