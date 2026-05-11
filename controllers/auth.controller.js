@@ -21,8 +21,8 @@ const registerUser = async (req, res) => {
 
     // Create new user
     const newlyCreatedUser = await userAuth.create({
-      email,
       username,
+      email,
       password: hashedPassword,
       role: role || "student", // default role if not provided
     });
