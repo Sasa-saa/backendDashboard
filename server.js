@@ -51,10 +51,6 @@
 //   console.log(`Server is running on port http://localhost:${PORT}`);
 // });
 
-
-
-
-
 // require("dotenv").config();
 // require("./config/connectdb");
 // const express = require("express");
@@ -74,10 +70,8 @@
 // const app = express();
 // const PORT = process.env.PORT || 5000;
 
-
 // // Middleware
 // app.use(express.json());
-
 
 // // ✅ Allow both localhost and your deployed frontend domain
 // const allowedOrigins = [
@@ -116,12 +110,8 @@
 // //   console.log(`Server is running on port http://localhost:${PORT}`);
 // // });
 
-
 // // ✅ Add this instead
 // module.exports = app;
-
-
-
 
 // require("dotenv").config();
 // require("./config/connectdb");
@@ -196,10 +186,6 @@
 
 // module.exports = app;
 
-
-
-
-
 require("dotenv").config();
 require("./config/connectdb");
 const express = require("express");
@@ -222,33 +208,33 @@ const PORT = process.env.PORT || 5000;
 // Middleware
 app.use(express.json());
 
-
 // ✅ CORS Configuration - Compatible with Express 5
-const allowedOrigins = [
-  "http://localhost:5173",
-  "https://backend-dashboard-gxz9mrcps-kingsanbo-9753s-projects.vercel.app" // <-- CHANGE THIS to your actual frontend URL
-];
+const allowedOrigins = ["http://localhost:5173"];
 
-app.use(cors({
-  origin: function (origin, callback) {
-    // Allow requests with no origin (like mobile apps or curl)
-    if (!origin) return callback(null, true);
-    if (allowedOrigins.indexOf(origin) !== -1) {
-      callback(null, true);
-    } else {
-      callback(new Error("CORS policy: This origin is not allowed."));
-    }
-  },
-  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-  credentials: true,
-}));
+app.use(
+  cors({
+    origin: function (origin, callback) {
+      // Allow requests with no origin (like mobile apps or curl)
+      if (!origin) return callback(null, true);
+      if (allowedOrigins.indexOf(origin) !== -1) {
+        callback(null, true);
+      } else {
+        callback(new Error("CORS policy: This origin is not allowed."));
+      }
+    },
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    credentials: true,
+  }),
+);
 
 // 👇 This line has been removed as it causes the error in Express 5:
 // app.options('*', cors(corsOptions));
 
 // 🧪 (Optional) Logging middleware for debugging
 app.use((req, res, next) => {
-  console.log(`${req.method} ${req.path} - Origin: ${req.headers.origin || "none"}`);
+  console.log(
+    `${req.method} ${req.path} - Origin: ${req.headers.origin || "none"}`,
+  );
   next();
 });
 
