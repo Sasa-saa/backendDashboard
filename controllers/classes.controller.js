@@ -3,7 +3,7 @@ const Classes = require("../models/classes.model");
 // Create a new Classes record
 const createClasses = async (req, res) => {
   try {
-    const { id, avatar, name, email, date, amount, tax, tags } = req.body;
+    const { id, avatar, name, email, date, amount, tax, tags, status } = req.body;
 
     const newClasses = await Classes.create({
       id,
@@ -14,6 +14,7 @@ const createClasses = async (req, res) => {
       amount,
       tax,
       tags,
+      status,
     });
 
     if (!newClasses) {
@@ -96,11 +97,11 @@ const getClasses = async (req, res) => {
 const updateClasses = async (req, res) => {
   try {
     const { id } = req.params;
-    const { id: newId, avatar, name, email, date, amount, tax, tags } = req.body;
+    const { id: newId, avatar, name, email, date, amount, tax, tags, status } = req.body;
 
     const updatedClasses = await Classes.findByIdAndUpdate(
       id,
-      { name },
+      { name, status },
       { returnDocument: "after" }
     );
 

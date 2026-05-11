@@ -64,8 +64,6 @@
 
 // module.exports = task;
 
-
-
 const mongoose = require("mongoose");
 const validator = require("validator");
 
@@ -80,7 +78,7 @@ const classesSchema = new mongoose.Schema(
       type: String,
       required: true,
       validate: {
-        validator: v => validator.isURL(v),
+        validator: (v) => validator.isURL(v),
         message: "Invalid avatar URL",
       },
     },
@@ -125,16 +123,22 @@ const classesSchema = new mongoose.Schema(
           return (
             Array.isArray(v) &&
             v.length > 0 &&
-            v.every(tag =>
-              validator.isAlphanumeric(tag.replace(/\s/g, ""))
-            )
+            v.every((tag) => validator.isAlphanumeric(tag.replace(/\s/g, "")))
           );
         },
         message: "Tags must contain at least one valid alphanumeric string",
       },
     },
+    status: {
+      type: String,
+      required: true,
+      enum: ["present", "absent", "partialPaid"],
+      lowercase: true,
+      trim: true,
+      default: "present",
+    },
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
 const Classes = mongoose.model("Classes", classesSchema);

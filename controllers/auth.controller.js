@@ -7,39 +7,110 @@ const registerUser = async (req, res) => {
   try {
     const { username, email, password, role } = req.body;
 
-    // Check if user already exists
-    const existingUser = await userAuth.findOne({ email });
-    if (existingUser) {
+    // 1. Validate required fields
+    if (!username || !email || !password) {
+      return res.status(400).json({
+        success: false,
+        message: "Username, email, and password are required",
+      });
+    }
+
+    // 2. Check if email already exists
+    const existingEmail = await userAuth.findOne({ email });
+    if (existingEmail) {
       return res.status(400).json({
         success: false,
         message: "Email already in use",
       });
     }
 
-    // Hash password
+    // 3. Check if username already exists
+    const existingUsername = await userAuth.findOne({ username });
+    if (existingUsername) {
+      return res.status(400).json({
+        success: false,
+        message: "Username already taken",
+      });
+    }
+
+    // 4. Hash password
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // Create new user
+    // 5. Create new user
     const newlyCreatedUser = await userAuth.create({
-      username,
       email,
+      username,
       password: hashedPassword,
-      role: role || "student", // default role if not provided
+      role: role || "student",
     });
+
+    // 6. Send success response (don't return password)
+    const userResponse = newlyCreatedUser.toObject();
+    delete userResponse.password;
 
     res.status(201).json({
       success: true,
       message: "New user was created successfully",
-      data: newlyCreatedUser,
+      data: userResponse,
     });
   } catch (error) {
-    console.error(error);
+    console.error("Registration error:", error);
+
+    // Handle duplicate key errors from MongoDB (fallback)
+    if (error.code === 11000) {
+      const field = Object.keys(error.keyPattern)[0];
+      return res.status(400).json({
+        success: false,
+        message: `${field} already exists`,
+      });
+    }
+
     res.status(500).json({
       success: false,
       message: "An error occurred while creating the user",
     });
   }
 };
+
+
+
+// const registerUser = async (req, res) => {
+//   try {
+//     const { username, email, password, role } = req.body;
+
+//     // Check if user already exists
+//     const existingUser = await userAuth.findOne({ email });
+//     if (existingUser) {
+//       return res.status(400).json({
+//         success: false,
+//         message: "Email already in use",
+//       });
+//     }
+
+//     // Hash password
+//     const hashedPassword = await bcrypt.hash(password, 10);
+
+//     // Create new user
+//     const newlyCreatedUser = await userAuth.create({
+//       username,
+//       email,
+//       password: hashedPassword,
+//       role: role || "student", // default role if not provided
+//     });
+
+//     res.status(201).json({
+//       success: true,
+//       message: "New user was created successfully",
+//       data: newlyCreatedUser,
+//     });
+//   } catch (error) {
+//     console.error(error);
+//     res.status(500).json({
+//       success: false, 
+//       message: "An error occurred while creating the user",
+//     });
+//   }
+// };
 
 // Login route
 const loginUser = async (req, res) => {
