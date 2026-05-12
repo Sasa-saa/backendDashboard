@@ -7,8 +7,8 @@
 
 //     if (!token) {
 //         return res.status(401).json({
-//             success: false, 
-//             message: 'Access denied. No token provided. Please log in to access this resource.' 
+//             success: false,
+//             message: 'Access denied. No token provided. Please log in to access this resource.'
 //         });
 //     }
 
@@ -34,8 +34,8 @@
 
 //     if(!token) {
 //         return res.status(401).json({
-//             success: false, 
-//             message: 'Access denied. No token provided. Unauthorized.' 
+//             success: false,
+//             message: 'Access denied. No token provided. Unauthorized.'
 //         });
 //     }
 
@@ -57,8 +57,8 @@
 //     authCookie
 // }
 
-
 const jwt = require("jsonwebtoken");
+const cookie = require("cookie");
 
 const authMiddleware = (req, res, next) => {
   const authHeader = req.headers["authorization"];
@@ -67,7 +67,8 @@ const authMiddleware = (req, res, next) => {
   if (!token) {
     return res.status(401).json({
       success: false,
-      message: "Access denied. No token provided. Please log in to access this resource.",
+      message:
+        "Access denied. No token provided. Please log in to access this resource.",
     });
   }
 
@@ -95,8 +96,37 @@ const authMiddleware = (req, res, next) => {
   }
 };
 
+// const authCookie = (req, res, next) => {
+//   const token = req.cookies.token;
+
+//   if (!token) {
+//     return res.status(401).json({
+//       success: false,
+//       message: "Access denied. No token provided. Unauthorized.",
+//     });
+//   }
+
+//   try {
+//     const decoded = jwt.verify(token, process.env.JWT_SECRET_KEY);
+//     req.userInfo = decoded;
+
+//     if (decoded.role === "student") {
+//       console.log("Student authenticated via cookie");
+//     } else {
+//       console.log("Teacher authenticated via cookie");
+//     }
+
+//     next();
+//   } catch (error) {
+//     res.status(403).json({
+//       message: "Invalid or expired token",
+//     });
+//   }
+// };
+
 const authCookie = (req, res, next) => {
-  const token = req.cookies.token;
+  const cookies = req.headers.cookie ? cookie.parse(req.headers.cookie) : {};
+  const token = cookies.token;
 
   if (!token) {
     return res.status(401).json({

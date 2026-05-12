@@ -1,6 +1,7 @@
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const userAuth = require("../models/auth.model");
+const cookie = require("cookie");
 
 // Register route
 const registerUser = async (req, res) => {
@@ -112,45 +113,100 @@ const registerUser = async (req, res) => {
 //   }
 // };
 
+
+
+
 // Login route
 const loginUser = async (req, res) => {
   try {
     const { email, password } = req.body;
 
+    // 1. Find user by email
     const user = await userAuth.findOne({ email });
     if (!user) {
       return res.status(404).json({ success: false, message: "User not found" });
     }
 
+    // 2. Compare password
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
       return res.status(401).json({ success: false, message: "Invalid credentials" });
     }
 
+    // 3. Generate JWT
     const token = jwt.sign(
       { id: user._id, role: user.role },
       process.env.JWT_SECRET_KEY,
       { expiresIn: "1h" }
     );
 
-    res.cookie("token", token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "strict",
-      maxAge: 60 * 60 * 1000,
+    // 4. Serialize cookie manually using `cookie`
+    const serializedCookie = cookie.serialize("token", token, {
+      httpOnly: true,                          // prevent JS access
+      secure: process.env.NODE_ENV === "production", // only HTTPS in prod
+      sameSite: "strict",                      // CSRF protection
+      maxAge: 60 * 60,                         // 1 hour in seconds
+      path: "/",                               // cookie available site-wide
     });
+
+    // 5. Attach cookie to response header
+    res.setHeader("Set-Cookie", serializedCookie);
+
+    // 6. Send response (omit password)
+    const userResponse = user.toObject();
+    delete userResponse.password;
 
     res.status(200).json({
       success: true,
       message: "Login successful",
-      data: user,
-      token,
+      data: userResponse,
+      token, // optional: you can omit if you want only cookie-based auth
     });
   } catch (error) {
-    console.error(error);
+    console.error("Login error:", error);
     res.status(500).json({ success: false, message: "An error occurred during login" });
   }
 };
+
+// // Login route
+// const loginUser = async (req, res) => {
+//   try {
+//     const { email, password } = req.body;
+
+//     const user = await userAuth.findOne({ email });
+//     if (!user) {
+//       return res.status(404).json({ success: false, message: "User not found" });
+//     }
+
+//     const isMatch = await bcrypt.compare(password, user.password);
+//     if (!isMatch) {
+//       return res.status(401).json({ success: false, message: "Invalid credentials" });
+//     }
+
+//     const token = jwt.sign(
+//       { id: user._id, role: user.role },
+//       process.env.JWT_SECRET_KEY,
+//       { expiresIn: "1h" }
+//     );
+
+//     res.cookie("token", token, {
+//       httpOnly: true,
+//       secure: process.env.NODE_ENV === "production",
+//       sameSite: "strict",
+//       maxAge: 60 * 60 * 1000,
+//     });
+
+//     res.status(200).json({
+//       success: true,
+//       message: "Login successful",
+//       data: user,
+//       token,
+//     });
+//   } catch (error) {
+//     console.error(error);
+//     res.status(500).json({ success: false, message: "An error occurred during login" });
+//   }
+// };
 
 // Logout route
 const logoutUser = async (req, res) => {

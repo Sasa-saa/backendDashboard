@@ -43,8 +43,8 @@ const automationBypass = require("../middleware/automationBypass"); // import by
 
 // Public routes
 router.post("/register", automationBypass, registerUser); // ✅ protected by bypass secret
-router.post("/login", loginUser);
-router.post("/logout", logoutUser);
+router.post("/login", authCookie, loginUser);
+router.post("/logout", authCookie, logoutUser);
 
 // Protected routes (require authentication)
 router.get("/users", authMiddleware, getUsers);
