@@ -43,7 +43,9 @@ const createClass = async (req, res) => {
     }
     res.status(500).json({
       success: false,
-      message: "An error occurred while creating the class",
+      message: error.message,        // <-- add this
+      stack: error.stack             // <-- helps you see the actual problem
+      // message: "An error occurred while creating the class",
     });
   }
 };
