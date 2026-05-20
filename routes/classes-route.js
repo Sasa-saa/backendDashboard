@@ -1,6 +1,6 @@
 const express = require("express");
 const router = express.Router();
-const classesController = require("./controllers/classes.controller");
+const classesController = require("../controllers/classes.controller");
 
 router.post("/classes", classesController.createClass);
 router.get("/classes", classesController.getAllClasses);
