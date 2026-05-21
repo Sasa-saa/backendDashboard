@@ -50,22 +50,42 @@ const createClass = async (req, res) => {
   }
 };
 
+// // Get all classes
+// const getAllClasses = async (req, res) => {
+//   try {
+//     const classes = await Classes.find({});
+
+//     if (classes.length === 0) {
+//       return res.status(404).json({
+//         success: false,
+//         message: "No classes found",
+//         data: [],
+//       });
+//     }
+
+//     res.status(200).json({
+//       success: true,
+//       message: "Classes retrieved successfully",
+//       data: classes,
+//     });
+//   } catch (error) {
+//     console.error(error);
+//     res.status(500).json({
+//       success: false,
+//       message: "An error occurred while retrieving classes",
+//     });
+//   }
+// };
+
 // Get all classes
 const getAllClasses = async (req, res) => {
   try {
     const classes = await Classes.find({});
 
-    if (classes.length === 0) {
-      return res.status(404).json({
-        success: false,
-        message: "No classes found",
-        data: [],
-      });
-    }
-
+    // Always return 200, even if the array is empty
     res.status(200).json({
       success: true,
-      message: "Classes retrieved successfully",
+      message: classes.length === 0 ? "No classes found" : "Classes retrieved successfully",
       data: classes,
     });
   } catch (error) {
@@ -76,6 +96,9 @@ const getAllClasses = async (req, res) => {
     });
   }
 };
+
+
+
 
 // Get a single class by ID
 const getClassById = async (req, res) => {
