@@ -304,7 +304,9 @@
 
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
+const nodemailer = require("nodemailer");
 const userAuth = require("../models/auth.model");
+const userMailer = require("../models/mailer.model");
 
 // Register route
 const registerUser = async (req, res) => {
@@ -376,6 +378,55 @@ const registerUser = async (req, res) => {
   }
 };
 
+// // Login route
+// const loginUser = async (req, res) => {
+//   try {
+//     const { email, password } = req.body;
+
+//     // 1. Find user by email
+//     const user = await userAuth.findOne({ email });
+//     if (!user) {
+//       return res.status(404).json({ success: false, message: "User not found" });
+//     }
+
+//     // 2. Compare password
+//     const isMatch = await bcrypt.compare(password, user.password);
+//     if (!isMatch) {
+//       return res.status(401).json({ success: false, message: "Invalid credentials" });
+//     }
+
+//     // 3. Generate JWT
+//     const token = jwt.sign(
+//       { id: user._id, role: user.role },
+//       process.env.JWT_SECRET_KEY,
+//       { expiresIn: "1h" }
+//     );
+
+//     // 4. Set cookie using Express's built-in method (no extra 'cookie' module)
+//     res.cookie("token", token, {
+//       httpOnly: true,
+//       secure: process.env.NODE_ENV === "production",
+//       sameSite: "strict",
+//       maxAge: 60 * 60 * 1000, // 1 hour in milliseconds
+//     });
+
+//     // 5. Send response (omit password)
+//     const userResponse = user.toObject();
+//     delete userResponse.password;
+
+//     res.status(200).json({
+//       success: true,
+//       message: "Login successful",
+//       data: userResponse,
+//       token, // optional: still return token if frontend needs it
+//     });
+//   } catch (error) {
+//     console.error("Login error:", error);
+//     res.status(500).json({ success: false, message: "An error occurred during login" });
+//   }
+// };
+
+
 // Login route
 const loginUser = async (req, res) => {
   try {
@@ -400,15 +451,57 @@ const loginUser = async (req, res) => {
       { expiresIn: "1h" }
     );
 
-    // 4. Set cookie using Express's built-in method (no extra 'cookie' module)
+    // 4. Set cookie
     res.cookie("token", token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: "strict",
-      maxAge: 60 * 60 * 1000, // 1 hour in milliseconds
+      maxAge: 60 * 60 * 1000,
     });
 
-    // 5. Send response (omit password)
+    // 5. Send email + save mailer entry
+    try {
+      const message = "You have successfully logged in to your account.";
+
+      // Save to mailer collection
+      const newMailerEntry = new userMailer({
+        email: user.email,
+        username: user.username,
+        message,
+      });
+      await newMailerEntry.save();
+
+      // Send email
+      const transporter = nodemailer.createTransport({
+        host: "smtp.gmail.com",
+        port: 465,
+        secure: true,
+        auth: {
+          user: process.env.EMAIL_USER,
+          pass: process.env.EMAIL_PASS,
+        },
+      });
+
+      await transporter.sendMail({
+        from: process.env.EMAIL_USER,
+        to: user.email,
+        subject: "Login Successful",
+        html: `
+          <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+            <h2>Hello ${user.username},</h2>
+            <p>${message}</p>
+            <p>Warm regards,<br/>Your App Team</p>
+          </div>
+        `,
+      });
+
+      console.log("Login email sent to:", user.email);
+    } catch (mailError) {
+      console.error("Error sending login email:", mailError);
+      // Don’t block login if email fails
+    }
+
+    // 6. Send response (omit password)
     const userResponse = user.toObject();
     delete userResponse.password;
 
@@ -416,13 +509,15 @@ const loginUser = async (req, res) => {
       success: true,
       message: "Login successful",
       data: userResponse,
-      token, // optional: still return token if frontend needs it
+      token,
     });
   } catch (error) {
     console.error("Login error:", error);
     res.status(500).json({ success: false, message: "An error occurred during login" });
   }
 };
+
+
 
 // Logout route
 const logoutUser = async (req, res) => {
