@@ -73,8 +73,6 @@
 //   }
 // };
 
-
-
 // // const registerUser = async (req, res) => {
 // //   try {
 // //     const { username, email, password, role } = req.body;
@@ -107,14 +105,11 @@
 // //   } catch (error) {
 // //     console.error(error);
 // //     res.status(500).json({
-// //       success: false, 
+// //       success: false,
 // //       message: "An error occurred while creating the user",
 // //     });
 // //   }
 // // };
-
-
-
 
 // // Login route
 // const loginUser = async (req, res) => {
@@ -301,7 +296,6 @@
 //   deleteUser,
 // };
 
-
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const nodemailer = require("nodemailer");
@@ -374,6 +368,8 @@ const registerUser = async (req, res) => {
     res.status(500).json({
       success: false,
       message: "An error occurred while creating the user",
+      error: error.message,
+      stack: process.env.NODE_ENV === "development" ? error.stack : undefined,
     });
   }
 };
@@ -426,7 +422,6 @@ const registerUser = async (req, res) => {
 //   }
 // };
 
-
 // Login route
 const loginUser = async (req, res) => {
   try {
@@ -435,27 +430,32 @@ const loginUser = async (req, res) => {
     // 1. Find user by email
     const user = await userAuth.findOne({ email });
     if (!user) {
-      return res.status(404).json({ success: false, message: "User not found" });
+      return res
+        .status(404)
+        .json({ success: false, message: "User not found" });
     }
 
     // 2. Compare password
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
-      return res.status(401).json({ success: false, message: "Invalid credentials" });
+      return res
+        .status(401)
+        .json({ success: false, message: "Invalid credentials" });
     }
 
     // 3. Generate JWT
     const token = jwt.sign(
       { id: user._id, role: user.role },
       process.env.JWT_SECRET_KEY,
-      { expiresIn: "1h" }
+      { expiresIn: "1h" },
     );
 
-    // 4. Set cookie
+    // 4. Set cookie         // sameSite: "strict", "lax" is more compatible with modern browsers and allows cookies in some cross-site contexts (like if your frontend and backend are on different domains during development). You can switch to "strict" in production if you want tighter security, but "lax" is often a good balance for APIs.
+    const isProduction = process.env.NODE_ENV === "production";
     res.cookie("token", token, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "strict",
+      secure: isProduction,
+      sameSite: isProduction ? "none" : "lax",
       maxAge: 60 * 60 * 1000,
     });
 
@@ -513,25 +513,30 @@ const loginUser = async (req, res) => {
     });
   } catch (error) {
     console.error("Login error:", error);
-    res.status(500).json({ success: false, message: "An error occurred during login" });
+    res
+      .status(500)
+      .json({ success: false, message: "An error occurred during login" });
   }
 };
 
-
-
-// Logout route
+// Logout route   // sameSite: "strict", "lax" is more compatible with modern browsers and allows cookies in some cross-site contexts (like if your frontend and backend are on different domains during development). You can switch to "strict" in production if you want tighter security, but "lax" is often a good balance for APIs.
 const logoutUser = async (req, res) => {
   try {
+    const isProduction = process.env.NODE_ENV === "production";
     res.clearCookie("token", {
       httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "strict",
+      secure: isProduction,
+      sameSite: isProduction ? "none" : "lax",
     });
 
-    res.status(200).json({ success: true, message: "User logged out successfully" });
+    res
+      .status(200)
+      .json({ success: true, message: "User logged out successfully" });
   } catch (error) {
     console.error(error);
-    res.status(500).json({ success: false, message: "An error occurred during logout" });
+    res
+      .status(500)
+      .json({ success: false, message: "An error occurred during logout" });
   }
 };
 
@@ -540,12 +545,25 @@ const getUsers = async (req, res) => {
   try {
     const allUsers = await userAuth.find({});
     if (!allUsers.length) {
-      return res.status(404).json({ success: false, message: "No users found" });
+      return res
+        .status(404)
+        .json({ success: false, message: "No users found" });
     }
-    res.status(200).json({ success: true, message: "Users retrieved successfully", data: allUsers });
+    res
+      .status(200)
+      .json({
+        success: true,
+        message: "Users retrieved successfully",
+        data: allUsers,
+      });
   } catch (error) {
     console.error(error);
-    res.status(500).json({ success: false, message: "An error occurred while retrieving users" });
+    res
+      .status(500)
+      .json({
+        success: false,
+        message: "An error occurred while retrieving users",
+      });
   }
 };
 
@@ -555,12 +573,25 @@ const getUser = async (req, res) => {
     const { id } = req.params;
     const user = await userAuth.findById(id);
     if (!user) {
-      return res.status(404).json({ success: false, message: "User not found" });
+      return res
+        .status(404)
+        .json({ success: false, message: "User not found" });
     }
-    res.status(200).json({ success: true, message: "User retrieved successfully", data: user });
+    res
+      .status(200)
+      .json({
+        success: true,
+        message: "User retrieved successfully",
+        data: user,
+      });
   } catch (error) {
     console.error(error);
-    res.status(500).json({ success: false, message: "An error occurred while retrieving the user" });
+    res
+      .status(500)
+      .json({
+        success: false,
+        message: "An error occurred while retrieving the user",
+      });
   }
 };
 
@@ -575,15 +606,33 @@ const updateUser = async (req, res) => {
       updateData.password = await bcrypt.hash(password, 10);
     }
 
-    const updatedUser = await userAuth.findByIdAndUpdate(id, updateData, { new: true });
+    const updatedUser = await userAuth.findByIdAndUpdate(id, updateData, {
+      new: true,
+    });
     if (!updatedUser) {
-      return res.status(404).json({ success: false, message: "User not found or could not be updated" });
+      return res
+        .status(404)
+        .json({
+          success: false,
+          message: "User not found or could not be updated",
+        });
     }
 
-    res.status(200).json({ success: true, message: "User updated successfully", data: updatedUser });
+    res
+      .status(200)
+      .json({
+        success: true,
+        message: "User updated successfully",
+        data: updatedUser,
+      });
   } catch (error) {
     console.error(error);
-    res.status(500).json({ success: false, message: "An error occurred while updating the user" });
+    res
+      .status(500)
+      .json({
+        success: false,
+        message: "An error occurred while updating the user",
+      });
   }
 };
 
@@ -593,12 +642,28 @@ const deleteUser = async (req, res) => {
     const { id } = req.params;
     const deletedUser = await userAuth.findByIdAndDelete(id);
     if (!deletedUser) {
-      return res.status(404).json({ success: false, message: "User not found or could not be deleted" });
+      return res
+        .status(404)
+        .json({
+          success: false,
+          message: "User not found or could not be deleted",
+        });
     }
-    res.status(200).json({ success: true, message: "User deleted successfully", data: deletedUser });
+    res
+      .status(200)
+      .json({
+        success: true,
+        message: "User deleted successfully",
+        data: deletedUser,
+      });
   } catch (error) {
     console.error(error);
-    res.status(500).json({ success: false, message: "An error occurred while deleting the user" });
+    res
+      .status(500)
+      .json({
+        success: false,
+        message: "An error occurred while deleting the user",
+      });
   }
 };
 
