@@ -110,6 +110,7 @@ app.use((req, res, next) => {
 // Routes
 app.use("/api/attendance", attendanceRouter);
 app.use("/api/auth", authRouter);
+app.use("/auth", authRouter);   // add this line before the other routes
 app.use("/api/classes", classesRouter);
 app.use("/api/stats", statsRouter);
 
