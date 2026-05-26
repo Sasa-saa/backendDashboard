@@ -132,70 +132,232 @@
 
 
 
-const Attendance = require("../models/attendance.model");
-const connectDb = require("../config/connectdb"); // Import connection function
+// const Attendance = require("../models/attendance.model");
+// const connectDb = require("../config/connectdb"); // Import connection function
 
-// Helper to ensure DB connection before any operation
+// // Helper to ensure DB connection before any operation
+// const ensureDb = async () => {
+//   await connectDb();
+// };
+
+// // Create a new attendance record
+// exports.createAttendance = async (req, res) => {
+//   try {
+//     await ensureDb();
+
+//     const { day, count, group, name, present, absent, range } = req.body;
+
+//     if (
+//       !day ||
+//       !count ||
+//       !group ||
+//       !name ||
+//       present == null ||
+//       absent == null ||
+//       !range
+//     ) {
+//       return res.status(400).json({
+//         success: false,
+//         error: "All fields (day, count, group, name, present, absent, range) are required",
+//       });
+//     }
+
+//     if (!["daily", "weekly", "monthly"].includes(range)) {
+//       return res.status(400).json({
+//         success: false,
+//         error: "Invalid range. Allowed values are daily, weekly, monthly.",
+//       });
+//     }
+
+//     const newAttendance = new Attendance({
+//       day,
+//       count,
+//       group,
+//       name,
+//       present,
+//       absent,
+//       range,
+//     });
+//     await newAttendance.save();
+
+//     res.status(201).json({
+//       success: true,
+//       message: "Attendance recorded",
+//       data: newAttendance,
+//     });
+//   } catch (error) {
+//     console.error("Error creating attendance:", error);
+//     res.status(500).json({
+//       success: false,
+//       error: "Server error",
+//       details: process.env.NODE_ENV === "production" ? undefined : error.message,
+//     });
+//   }
+// };
+
+// // Get all attendance records with optional type filter
+// exports.getAttendances = async (req, res) => {
+//   const { type } = req.query;
+
+//   try {
+//     await ensureDb();
+
+//     let query = {};
+//     if (type && ["daily", "weekly", "monthly"].includes(type)) {
+//       query.range = type;
+//     }
+
+//     const attendances = await Attendance.find(query);
+//     res.status(200).json({
+//       success: true,
+//       data: attendances,
+//     });
+//   } catch (error) {
+//     console.error("Error fetching attendance:", error);
+//     res.status(500).json({
+//       success: false,
+//       error: "Server error",
+//       details: process.env.NODE_ENV === "production" ? undefined : error.message,
+//     });
+//   }
+// };
+
+// // Get a single attendance record by ID
+// exports.getAttendanceById = async (req, res) => {
+//   try {
+//     await ensureDb();
+
+//     const attendance = await Attendance.findById(req.params.id);
+
+//     if (!attendance) {
+//       return res.status(404).json({
+//         success: false,
+//         error: "Attendance not found",
+//       });
+//     }
+
+//     res.status(200).json({
+//       success: true,
+//       data: attendance,
+//     });
+//   } catch (error) {
+//     console.error("Error fetching attendance by ID:", error);
+//     res.status(500).json({
+//       success: false,
+//       error: "Server error",
+//       details: process.env.NODE_ENV === "production" ? undefined : error.message,
+//     });
+//   }
+// };
+
+// // Update an attendance record
+// exports.updateAttendance = async (req, res) => {
+//   try {
+//     await ensureDb();
+
+//     const updatedAttendance = await Attendance.findByIdAndUpdate(
+//       req.params.id,
+//       req.body,
+//       { new: true, runValidators: true },
+//     );
+
+//     if (!updatedAttendance) {
+//       return res.status(404).json({
+//         success: false,
+//         error: "Attendance not found",
+//       });
+//     }
+
+//     res.status(200).json({
+//       success: true,
+//       message: "Attendance updated",
+//       data: updatedAttendance,
+//     });
+//   } catch (error) {
+//     console.error("Error updating attendance:", error);
+//     res.status(500).json({
+//       success: false,
+//       error: "Server error",
+//       details: process.env.NODE_ENV === "production" ? undefined : error.message,
+//     });
+//   }
+// };
+
+// // Delete an attendance record
+// exports.deleteAttendance = async (req, res) => {
+//   try {
+//     await ensureDb();
+
+//     const deletedAttendance = await Attendance.findByIdAndDelete(req.params.id);
+
+//     if (!deletedAttendance) {
+//       return res.status(404).json({
+//         success: false,
+//         error: "Attendance not found",
+//       });
+//     }
+
+//     res.status(200).json({
+//       success: true,
+//       message: "Attendance deleted",
+//     });
+//   } catch (error) {
+//     console.error("Error deleting attendance:", error);
+//     res.status(500).json({
+//       success: false,
+//       error: "Server error",
+//       details: process.env.NODE_ENV === "production" ? undefined : error.message,
+//     });
+//   }
+// };
+
+
+
+
+
+
+const Attendance = require("../models/attendance.model");
+const connectDb = require("../config/connectdb");
+
 const ensureDb = async () => {
   await connectDb();
 };
 
-// Create a new attendance record
+// Create a new attendance record (matches frontend POST needs)
 exports.createAttendance = async (req, res) => {
   try {
     await ensureDb();
+    const { day, present, absent, range } = req.body;
 
-    const { day, count, group, name, present, absent, range } = req.body;
-
-    if (
-      !day ||
-      !count ||
-      !group ||
-      !name ||
-      present == null ||
-      absent == null ||
-      !range
-    ) {
+    if (!day || present === undefined || absent === undefined || !range) {
       return res.status(400).json({
         success: false,
-        error: "All fields (day, count, group, name, present, absent, range) are required",
+        error: "Missing required fields: day, present, absent, range",
       });
     }
 
     if (!["daily", "weekly", "monthly"].includes(range)) {
       return res.status(400).json({
         success: false,
-        error: "Invalid range. Allowed values are daily, weekly, monthly.",
+        error: "Invalid range. Use daily, weekly, or monthly",
       });
     }
 
-    const newAttendance = new Attendance({
-      day,
-      count,
-      group,
-      name,
-      present,
-      absent,
-      range,
-    });
+    const newAttendance = new Attendance({ day, present, absent, range });
     await newAttendance.save();
 
     res.status(201).json({
       success: true,
       message: "Attendance recorded",
-      data: newAttendance,
+      data: { day: newAttendance.day, present: newAttendance.present, absent: newAttendance.absent, range: newAttendance.range },
     });
   } catch (error) {
     console.error("Error creating attendance:", error);
-    res.status(500).json({
-      success: false,
-      error: "Server error",
-      details: process.env.NODE_ENV === "production" ? undefined : error.message,
-    });
+    res.status(500).json({ success: false, error: "Server error" });
   }
 };
 
-// Get all attendance records with optional type filter
+// GET /api/attendance?type=weekly   -> returns array for frontend chart
 exports.getAttendances = async (req, res) => {
   const { type } = req.query;
 
@@ -207,106 +369,60 @@ exports.getAttendances = async (req, res) => {
       query.range = type;
     }
 
-    const attendances = await Attendance.find(query);
-    res.status(200).json({
-      success: true,
-      data: attendances,
-    });
-  } catch (error) {
-    console.error("Error fetching attendance:", error);
-    res.status(500).json({
-      success: false,
-      error: "Server error",
-      details: process.env.NODE_ENV === "production" ? undefined : error.message,
-    });
-  }
-};
+    const records = await Attendance.find(query);
 
-// Get a single attendance record by ID
-exports.getAttendanceById = async (req, res) => {
-  try {
-    await ensureDb();
+    // Transform to the exact format frontend expects: { name, present, absent }
+    const chartData = records.map(record => ({
+      name: record.day,
+      present: record.present,
+      absent: record.absent,
+    }));
 
-    const attendance = await Attendance.findById(req.params.id);
-
-    if (!attendance) {
-      return res.status(404).json({
-        success: false,
-        error: "Attendance not found",
-      });
+    // If you want to enforce a fixed order for weekly (Sun...Sat), add sorting:
+    if (type === "weekly") {
+      const dayOrder = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+      chartData.sort((a, b) => dayOrder.indexOf(a.name) - dayOrder.indexOf(b.name));
     }
 
-    res.status(200).json({
-      success: true,
-      data: attendance,
-    });
+    // Frontend expects the array directly (not wrapped in { data: ... })
+    res.status(200).json(chartData);
   } catch (error) {
-    console.error("Error fetching attendance by ID:", error);
-    res.status(500).json({
-      success: false,
-      error: "Server error",
-      details: process.env.NODE_ENV === "production" ? undefined : error.message,
-    });
+    console.error("Error fetching attendance:", error);
+    res.status(500).json({ success: false, error: "Server error" });
   }
 };
 
-// Update an attendance record
+// (Keep other CRUD methods if you need them – but they are optional)
+// For completeness, here's the update method (unchanged, but adapt to new schema)
 exports.updateAttendance = async (req, res) => {
   try {
     await ensureDb();
-
-    const updatedAttendance = await Attendance.findByIdAndUpdate(
-      req.params.id,
-      req.body,
-      { new: true, runValidators: true },
-    );
-
-    if (!updatedAttendance) {
-      return res.status(404).json({
-        success: false,
-        error: "Attendance not found",
-      });
-    }
-
-    res.status(200).json({
-      success: true,
-      message: "Attendance updated",
-      data: updatedAttendance,
-    });
+    const updated = await Attendance.findByIdAndUpdate(req.params.id, req.body, { new: true, runValidators: true });
+    if (!updated) return res.status(404).json({ success: false, error: "Not found" });
+    res.status(200).json({ success: true, data: { name: updated.day, present: updated.present, absent: updated.absent } });
   } catch (error) {
-    console.error("Error updating attendance:", error);
-    res.status(500).json({
-      success: false,
-      error: "Server error",
-      details: process.env.NODE_ENV === "production" ? undefined : error.message,
-    });
+    res.status(500).json({ success: false, error: "Server error" });
   }
 };
 
-// Delete an attendance record
 exports.deleteAttendance = async (req, res) => {
   try {
     await ensureDb();
-
-    const deletedAttendance = await Attendance.findByIdAndDelete(req.params.id);
-
-    if (!deletedAttendance) {
-      return res.status(404).json({
-        success: false,
-        error: "Attendance not found",
-      });
-    }
-
-    res.status(200).json({
-      success: true,
-      message: "Attendance deleted",
-    });
+    const deleted = await Attendance.findByIdAndDelete(req.params.id);
+    if (!deleted) return res.status(404).json({ success: false, error: "Not found" });
+    res.status(200).json({ success: true, message: "Deleted" });
   } catch (error) {
-    console.error("Error deleting attendance:", error);
-    res.status(500).json({
-      success: false,
-      error: "Server error",
-      details: process.env.NODE_ENV === "production" ? undefined : error.message,
-    });
+    res.status(500).json({ success: false, error: "Server error" });
+  }
+};
+
+exports.getAttendanceById = async (req, res) => {
+  try {
+    await ensureDb();
+    const record = await Attendance.findById(req.params.id);
+    if (!record) return res.status(404).json({ success: false, error: "Not found" });
+    res.status(200).json({ success: true, data: { name: record.day, present: record.present, absent: record.absent } });
+  } catch (error) {
+    res.status(500).json({ success: false, error: "Server error" });
   }
 };

@@ -28,17 +28,34 @@
 
 
 
+// const mongoose = require("mongoose");
+
+// const attendanceSchema = new mongoose.Schema(
+//   {
+//     day: { type: String, required: true },
+//     count: { type: Number, required: true },
+//     group: { type: String, required: true },
+//     name: { type: String, required: true },
+//     present: { type: Number, required: true },
+//     absent: { type: Number, required: true },
+//     range: { type: String, enum: ["daily", "weekly", "monthly"], required: true } // NEW
+//   },
+//   { timestamps: true }
+// );
+
+// module.exports = mongoose.model("Attendance", attendanceSchema);
+
+
+
+
 const mongoose = require("mongoose");
 
 const attendanceSchema = new mongoose.Schema(
   {
-    day: { type: String, required: true },
-    count: { type: Number, required: true },
-    group: { type: String, required: true },
-    name: { type: String, required: true },
+    day: { type: String, required: true },     // e.g., "Sun", "Mon", "2025-05-01"
     present: { type: Number, required: true },
     absent: { type: Number, required: true },
-    range: { type: String, enum: ["daily", "weekly", "monthly"], required: true } // NEW
+    range: { type: String, enum: ["daily", "weekly", "monthly"], required: true }
   },
   { timestamps: true }
 );
