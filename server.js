@@ -109,10 +109,13 @@ app.use((req, res, next) => {
 
 // Routes
 app.use("/api/attendance", attendanceRouter);
+app.use("/attendance", attendanceRouter); // Add this duplicate route
 app.use("/api/auth", authRouter);
 app.use("/auth", authRouter);   // add this line before the other routes
 app.use("/api/classes", classesRouter);
+app.use("/classes", classesRouter); // Add this duplicate route
 app.use("/api/stats", statsRouter);
+app.use("/stats", statsRouter); // Add this duplicate route
 
 // Home route
 app.get("/", (req, res) => {
