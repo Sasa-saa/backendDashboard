@@ -296,18 +296,405 @@
 //   deleteUser,
 // };
 
+// const bcrypt = require("bcryptjs");
+// const jwt = require("jsonwebtoken");
+// const nodemailer = require("nodemailer");
+// const userAuth = require("../models/auth.model");
+// const userMailer = require("../models/mailer.model");
+
+// // Register route
+// const registerUser = async (req, res) => {
+//   try {
+//     const { username, email, password, role } = req.body;
+
+//     // 1. Validate required fields
+//     if (!username || !email || !password) {
+//       return res.status(400).json({
+//         success: false,
+//         message: "Username, email, and password are required",
+//       });
+//     }
+
+//     // 2. Check if email already exists
+//     const existingEmail = await userAuth.findOne({ email });
+//     if (existingEmail) {
+//       return res.status(400).json({
+//         success: false,
+//         message: "Email already in use",
+//       });
+//     }
+
+//     // 3. Check if username already exists
+//     const existingUsername = await userAuth.findOne({ username });
+//     if (existingUsername) {
+//       return res.status(400).json({
+//         success: false,
+//         message: "Username already taken",
+//       });
+//     }
+
+//     // 4. Hash password
+//     const hashedPassword = await bcrypt.hash(password, 10);
+
+//     // 5. Create new user
+//     const newlyCreatedUser = await userAuth.create({
+//       email,
+//       username,
+//       password: hashedPassword,
+//       role: role || "student",
+//     });
+
+//     // 6. Send success response (don't return password)
+//     const userResponse = newlyCreatedUser.toObject();
+//     delete userResponse.password;
+
+//     res.status(201).json({
+//       success: true,
+//       message: "New user was created successfully",
+//       data: userResponse,
+//     });
+//   } catch (error) {
+//     console.error("Registration error:", error);
+
+//     // Handle duplicate key errors from MongoDB
+//     if (error.code === 11000) {
+//       const field = Object.keys(error.keyPattern)[0];
+//       return res.status(400).json({
+//         success: false,
+//         message: `${field} already exists`,
+//       });
+//     }
+
+//     res.status(500).json({
+//       success: false,
+//       message: "An error occurred while creating the user",
+//       error: error.message,
+//       stack: process.env.NODE_ENV === "development" ? error.stack : undefined,
+//     });
+//   }
+// };
+
+// // // Login route
+// // const loginUser = async (req, res) => {
+// //   try {
+// //     const { email, password } = req.body;
+
+// //     // 1. Find user by email
+// //     const user = await userAuth.findOne({ email });
+// //     if (!user) {
+// //       return res.status(404).json({ success: false, message: "User not found" });
+// //     }
+
+// //     // 2. Compare password
+// //     const isMatch = await bcrypt.compare(password, user.password);
+// //     if (!isMatch) {
+// //       return res.status(401).json({ success: false, message: "Invalid credentials" });
+// //     }
+
+// //     // 3. Generate JWT
+// //     const token = jwt.sign(
+// //       { id: user._id, role: user.role },
+// //       process.env.JWT_SECRET_KEY,
+// //       { expiresIn: "1h" }
+// //     );
+
+// //     // 4. Set cookie using Express's built-in method (no extra 'cookie' module)
+// //     res.cookie("token", token, {
+// //       httpOnly: true,
+// //       secure: process.env.NODE_ENV === "production",
+// //       sameSite: "strict",
+// //       maxAge: 60 * 60 * 1000, // 1 hour in milliseconds
+// //     });
+
+// //     // 5. Send response (omit password)
+// //     const userResponse = user.toObject();
+// //     delete userResponse.password;
+
+// //     res.status(200).json({
+// //       success: true,
+// //       message: "Login successful",
+// //       data: userResponse,
+// //       token, // optional: still return token if frontend needs it
+// //     });
+// //   } catch (error) {
+// //     console.error("Login error:", error);
+// //     res.status(500).json({ success: false, message: "An error occurred during login" });
+// //   }
+// // };
+
+// // Login route
+// const loginUser = async (req, res) => {
+//   try {
+//     const { email, password } = req.body;
+
+//     // 1. Find user by email
+//     const user = await userAuth.findOne({ email });
+//     if (!user) {
+//       return res
+//         .status(404)
+//         .json({ success: false, message: "User not found" });
+//     }
+
+//     // 2. Compare password
+//     const isMatch = await bcrypt.compare(password, user.password);
+//     if (!isMatch) {
+//       return res
+//         .status(401)
+//         .json({ success: false, message: "Invalid credentials" });
+//     }
+
+//     // 3. Generate JWT
+//     const token = jwt.sign(
+//       { id: user._id, role: user.role },
+//       process.env.JWT_SECRET_KEY,
+//       { expiresIn: "1h" },
+//     );
+
+//     // 4. Set cookie         // sameSite: "strict", "lax" is more compatible with modern browsers and allows cookies in some cross-site contexts (like if your frontend and backend are on different domains during development). You can switch to "strict" in production if you want tighter security, but "lax" is often a good balance for APIs.
+//     const isProduction = process.env.NODE_ENV === "production";
+//     res.cookie("token", token, {
+//       httpOnly: true,
+//       secure: isProduction,
+//       sameSite: isProduction ? "none" : "lax",
+//       maxAge: 60 * 60 * 1000,
+//     });
+
+//     // 5. Send email + save mailer entry
+//     try {
+//       const message = "You have successfully logged in to your account.";
+
+//       // Save to mailer collection
+//       const newMailerEntry = new userMailer({
+//         email: user.email,
+//         username: user.username,
+//         message,
+//       });
+//       await newMailerEntry.save();
+
+//       // Send email
+//       const transporter = nodemailer.createTransport({
+//         host: "smtp.gmail.com",
+//         port: 465,
+//         secure: true,
+//         auth: {
+//           user: process.env.EMAIL_USER,
+//           pass: process.env.EMAIL_PASS,
+//         },
+//       });
+
+//       await transporter.sendMail({
+//         from: process.env.EMAIL_USER,
+//         to: user.email,
+//         subject: "Login Successful",
+//         html: `
+//           <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+//             <h2>Hello ${user.username},</h2>
+//             <p>${message}</p>
+//             <p>Warm regards,<br/>Your App Team</p>
+//           </div>
+//         `,
+//       });
+
+//       console.log("Login email sent to:", user.email);
+//     } catch (mailError) {
+//       console.error("Error sending login email:", mailError);
+//       // Don’t block login if email fails
+//     }
+
+//     // 6. Send response (omit password)
+//     const userResponse = user.toObject();
+//     delete userResponse.password;
+
+//     res.status(200).json({
+//       success: true,
+//       message: "Login successful",
+//       data: userResponse,
+//       token,
+//     });
+//   } catch (error) {
+//     console.error("Login error:", error);
+//     res
+//       .status(500)
+//       .json({ success: false, message: "An error occurred during login" });
+//   }
+// };
+
+// // Logout route   // sameSite: "strict", "lax" is more compatible with modern browsers and allows cookies in some cross-site contexts (like if your frontend and backend are on different domains during development). You can switch to "strict" in production if you want tighter security, but "lax" is often a good balance for APIs.
+// const logoutUser = async (req, res) => {
+//   try {
+//     const isProduction = process.env.NODE_ENV === "production";
+//     res.clearCookie("token", {
+//       httpOnly: true,
+//       secure: isProduction,
+//       sameSite: isProduction ? "none" : "lax",
+//     });
+
+//     res
+//       .status(200)
+//       .json({ success: true, message: "User logged out successfully" });
+//   } catch (error) {
+//     console.error(error);
+//     res
+//       .status(500)
+//       .json({ success: false, message: "An error occurred during logout" });
+//   }
+// };
+
+// // Get all users
+// const getUsers = async (req, res) => {
+//   try {
+//     const allUsers = await userAuth.find({});
+//     if (!allUsers.length) {
+//       return res
+//         .status(404)
+//         .json({ success: false, message: "No users found" });
+//     }
+//     res
+//       .status(200)
+//       .json({
+//         success: true,
+//         message: "Users retrieved successfully",
+//         data: allUsers,
+//       });
+//   } catch (error) {
+//     console.error(error);
+//     res
+//       .status(500)
+//       .json({
+//         success: false,
+//         message: "An error occurred while retrieving users",
+//       });
+//   }
+// };
+
+// // Get single user
+// const getUser = async (req, res) => {
+//   try {
+//     const { id } = req.params;
+//     const user = await userAuth.findById(id);
+//     if (!user) {
+//       return res
+//         .status(404)
+//         .json({ success: false, message: "User not found" });
+//     }
+//     res
+//       .status(200)
+//       .json({
+//         success: true,
+//         message: "User retrieved successfully",
+//         data: user,
+//       });
+//   } catch (error) {
+//     console.error(error);
+//     res
+//       .status(500)
+//       .json({
+//         success: false,
+//         message: "An error occurred while retrieving the user",
+//       });
+//   }
+// };
+
+// // Update user
+// const updateUser = async (req, res) => {
+//   try {
+//     const { id } = req.params;
+//     const { username, email, password, role } = req.body;
+
+//     const updateData = { username, email, role };
+//     if (password) {
+//       updateData.password = await bcrypt.hash(password, 10);
+//     }
+
+//     const updatedUser = await userAuth.findByIdAndUpdate(id, updateData, {
+//       new: true,
+//     });
+//     if (!updatedUser) {
+//       return res
+//         .status(404)
+//         .json({
+//           success: false,
+//           message: "User not found or could not be updated",
+//         });
+//     }
+
+//     res
+//       .status(200)
+//       .json({
+//         success: true,
+//         message: "User updated successfully",
+//         data: updatedUser,
+//       });
+//   } catch (error) {
+//     console.error(error);
+//     res
+//       .status(500)
+//       .json({
+//         success: false,
+//         message: "An error occurred while updating the user",
+//       });
+//   }
+// };
+
+// // Delete user
+// const deleteUser = async (req, res) => {
+//   try {
+//     const { id } = req.params;
+//     const deletedUser = await userAuth.findByIdAndDelete(id);
+//     if (!deletedUser) {
+//       return res
+//         .status(404)
+//         .json({
+//           success: false,
+//           message: "User not found or could not be deleted",
+//         });
+//     }
+//     res
+//       .status(200)
+//       .json({
+//         success: true,
+//         message: "User deleted successfully",
+//         data: deletedUser,
+//       });
+//   } catch (error) {
+//     console.error(error);
+//     res
+//       .status(500)
+//       .json({
+//         success: false,
+//         message: "An error occurred while deleting the user",
+//       });
+//   }
+// };
+
+// module.exports = {
+//   registerUser,
+//   loginUser,
+//   logoutUser,
+//   getUsers,
+//   getUser,
+//   updateUser,
+//   deleteUser,
+// };
+
+
+
+
+
+
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const nodemailer = require("nodemailer");
 const userAuth = require("../models/auth.model");
 const userMailer = require("../models/mailer.model");
+const connectDb = require("../config/connectdb"); // import DB connection function
 
 // Register route
 const registerUser = async (req, res) => {
+  await connectDb(); // ensure DB is ready
   try {
     const { username, email, password, role } = req.body;
 
-    // 1. Validate required fields
     if (!username || !email || !password) {
       return res.status(400).json({
         success: false,
@@ -315,7 +702,6 @@ const registerUser = async (req, res) => {
       });
     }
 
-    // 2. Check if email already exists
     const existingEmail = await userAuth.findOne({ email });
     if (existingEmail) {
       return res.status(400).json({
@@ -324,7 +710,6 @@ const registerUser = async (req, res) => {
       });
     }
 
-    // 3. Check if username already exists
     const existingUsername = await userAuth.findOne({ username });
     if (existingUsername) {
       return res.status(400).json({
@@ -333,10 +718,8 @@ const registerUser = async (req, res) => {
       });
     }
 
-    // 4. Hash password
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // 5. Create new user
     const newlyCreatedUser = await userAuth.create({
       email,
       username,
@@ -344,7 +727,6 @@ const registerUser = async (req, res) => {
       role: role || "student",
     });
 
-    // 6. Send success response (don't return password)
     const userResponse = newlyCreatedUser.toObject();
     delete userResponse.password;
 
@@ -355,8 +737,6 @@ const registerUser = async (req, res) => {
     });
   } catch (error) {
     console.error("Registration error:", error);
-
-    // Handle duplicate key errors from MongoDB
     if (error.code === 11000) {
       const field = Object.keys(error.keyPattern)[0];
       return res.status(400).json({
@@ -364,7 +744,6 @@ const registerUser = async (req, res) => {
         message: `${field} already exists`,
       });
     }
-
     res.status(500).json({
       success: false,
       message: "An error occurred while creating the user",
@@ -374,83 +753,28 @@ const registerUser = async (req, res) => {
   }
 };
 
-// // Login route
-// const loginUser = async (req, res) => {
-//   try {
-//     const { email, password } = req.body;
-
-//     // 1. Find user by email
-//     const user = await userAuth.findOne({ email });
-//     if (!user) {
-//       return res.status(404).json({ success: false, message: "User not found" });
-//     }
-
-//     // 2. Compare password
-//     const isMatch = await bcrypt.compare(password, user.password);
-//     if (!isMatch) {
-//       return res.status(401).json({ success: false, message: "Invalid credentials" });
-//     }
-
-//     // 3. Generate JWT
-//     const token = jwt.sign(
-//       { id: user._id, role: user.role },
-//       process.env.JWT_SECRET_KEY,
-//       { expiresIn: "1h" }
-//     );
-
-//     // 4. Set cookie using Express's built-in method (no extra 'cookie' module)
-//     res.cookie("token", token, {
-//       httpOnly: true,
-//       secure: process.env.NODE_ENV === "production",
-//       sameSite: "strict",
-//       maxAge: 60 * 60 * 1000, // 1 hour in milliseconds
-//     });
-
-//     // 5. Send response (omit password)
-//     const userResponse = user.toObject();
-//     delete userResponse.password;
-
-//     res.status(200).json({
-//       success: true,
-//       message: "Login successful",
-//       data: userResponse,
-//       token, // optional: still return token if frontend needs it
-//     });
-//   } catch (error) {
-//     console.error("Login error:", error);
-//     res.status(500).json({ success: false, message: "An error occurred during login" });
-//   }
-// };
-
 // Login route
 const loginUser = async (req, res) => {
+  await connectDb(); // ensure DB is ready
   try {
     const { email, password } = req.body;
 
-    // 1. Find user by email
     const user = await userAuth.findOne({ email });
     if (!user) {
-      return res
-        .status(404)
-        .json({ success: false, message: "User not found" });
+      return res.status(404).json({ success: false, message: "User not found" });
     }
 
-    // 2. Compare password
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
-      return res
-        .status(401)
-        .json({ success: false, message: "Invalid credentials" });
+      return res.status(401).json({ success: false, message: "Invalid credentials" });
     }
 
-    // 3. Generate JWT
     const token = jwt.sign(
       { id: user._id, role: user.role },
       process.env.JWT_SECRET_KEY,
-      { expiresIn: "1h" },
+      { expiresIn: "1h" }
     );
 
-    // 4. Set cookie         // sameSite: "strict", "lax" is more compatible with modern browsers and allows cookies in some cross-site contexts (like if your frontend and backend are on different domains during development). You can switch to "strict" in production if you want tighter security, but "lax" is often a good balance for APIs.
     const isProduction = process.env.NODE_ENV === "production";
     res.cookie("token", token, {
       httpOnly: true,
@@ -459,11 +783,9 @@ const loginUser = async (req, res) => {
       maxAge: 60 * 60 * 1000,
     });
 
-    // 5. Send email + save mailer entry
+    // Email & mailer (optional, but we keep)
     try {
       const message = "You have successfully logged in to your account.";
-
-      // Save to mailer collection
       const newMailerEntry = new userMailer({
         email: user.email,
         username: user.username,
@@ -471,7 +793,6 @@ const loginUser = async (req, res) => {
       });
       await newMailerEntry.save();
 
-      // Send email
       const transporter = nodemailer.createTransport({
         host: "smtp.gmail.com",
         port: 465,
@@ -494,14 +815,11 @@ const loginUser = async (req, res) => {
           </div>
         `,
       });
-
       console.log("Login email sent to:", user.email);
     } catch (mailError) {
       console.error("Error sending login email:", mailError);
-      // Don’t block login if email fails
     }
 
-    // 6. Send response (omit password)
     const userResponse = user.toObject();
     delete userResponse.password;
 
@@ -513,14 +831,14 @@ const loginUser = async (req, res) => {
     });
   } catch (error) {
     console.error("Login error:", error);
-    res
-      .status(500)
-      .json({ success: false, message: "An error occurred during login" });
+    res.status(500).json({ success: false, message: "An error occurred during login" });
   }
 };
 
-// Logout route   // sameSite: "strict", "lax" is more compatible with modern browsers and allows cookies in some cross-site contexts (like if your frontend and backend are on different domains during development). You can switch to "strict" in production if you want tighter security, but "lax" is often a good balance for APIs.
+// Logout route
 const logoutUser = async (req, res) => {
+  // No DB operation, but we still ensure connection if you later add something
+  await connectDb();
   try {
     const isProduction = process.env.NODE_ENV === "production";
     res.clearCookie("token", {
@@ -528,75 +846,61 @@ const logoutUser = async (req, res) => {
       secure: isProduction,
       sameSite: isProduction ? "none" : "lax",
     });
-
-    res
-      .status(200)
-      .json({ success: true, message: "User logged out successfully" });
+    res.status(200).json({ success: true, message: "User logged out successfully" });
   } catch (error) {
     console.error(error);
-    res
-      .status(500)
-      .json({ success: false, message: "An error occurred during logout" });
+    res.status(500).json({ success: false, message: "An error occurred during logout" });
   }
 };
 
 // Get all users
 const getUsers = async (req, res) => {
+  await connectDb();
   try {
     const allUsers = await userAuth.find({});
     if (!allUsers.length) {
-      return res
-        .status(404)
-        .json({ success: false, message: "No users found" });
+      return res.status(404).json({ success: false, message: "No users found" });
     }
-    res
-      .status(200)
-      .json({
-        success: true,
-        message: "Users retrieved successfully",
-        data: allUsers,
-      });
+    res.status(200).json({
+      success: true,
+      message: "Users retrieved successfully",
+      data: allUsers,
+    });
   } catch (error) {
     console.error(error);
-    res
-      .status(500)
-      .json({
-        success: false,
-        message: "An error occurred while retrieving users",
-      });
+    res.status(500).json({
+      success: false,
+      message: "An error occurred while retrieving users",
+    });
   }
 };
 
 // Get single user
 const getUser = async (req, res) => {
+  await connectDb();
   try {
     const { id } = req.params;
     const user = await userAuth.findById(id);
     if (!user) {
-      return res
-        .status(404)
-        .json({ success: false, message: "User not found" });
+      return res.status(404).json({ success: false, message: "User not found" });
     }
-    res
-      .status(200)
-      .json({
-        success: true,
-        message: "User retrieved successfully",
-        data: user,
-      });
+    res.status(200).json({
+      success: true,
+      message: "User retrieved successfully",
+      data: user,
+    });
   } catch (error) {
     console.error(error);
-    res
-      .status(500)
-      .json({
-        success: false,
-        message: "An error occurred while retrieving the user",
-      });
+    res.status(500).json({
+      success: false,
+      message: "An error occurred while retrieving the user",
+    });
   }
 };
 
 // Update user
 const updateUser = async (req, res) => {
+  await connectDb();
   try {
     const { id } = req.params;
     const { username, email, password, role } = req.body;
@@ -606,64 +910,51 @@ const updateUser = async (req, res) => {
       updateData.password = await bcrypt.hash(password, 10);
     }
 
-    const updatedUser = await userAuth.findByIdAndUpdate(id, updateData, {
-      new: true,
-    });
+    const updatedUser = await userAuth.findByIdAndUpdate(id, updateData, { new: true });
     if (!updatedUser) {
-      return res
-        .status(404)
-        .json({
-          success: false,
-          message: "User not found or could not be updated",
-        });
+      return res.status(404).json({
+        success: false,
+        message: "User not found or could not be updated",
+      });
     }
 
-    res
-      .status(200)
-      .json({
-        success: true,
-        message: "User updated successfully",
-        data: updatedUser,
-      });
+    res.status(200).json({
+      success: true,
+      message: "User updated successfully",
+      data: updatedUser,
+    });
   } catch (error) {
     console.error(error);
-    res
-      .status(500)
-      .json({
-        success: false,
-        message: "An error occurred while updating the user",
-      });
+    res.status(500).json({
+      success: false,
+      message: "An error occurred while updating the user",
+    });
   }
 };
 
 // Delete user
 const deleteUser = async (req, res) => {
+  await connectDb();
   try {
     const { id } = req.params;
     const deletedUser = await userAuth.findByIdAndDelete(id);
     if (!deletedUser) {
-      return res
-        .status(404)
-        .json({
-          success: false,
-          message: "User not found or could not be deleted",
-        });
-    }
-    res
-      .status(200)
-      .json({
-        success: true,
-        message: "User deleted successfully",
-        data: deletedUser,
+      return res.status(404).json({
+        success: false,
+        message: "User not found or could not be deleted",
       });
+    }
+    res.status(200).json({
+      success: true,
+      message: "User deleted successfully",
+      data: deletedUser,
+    });
   } catch (error) {
     console.error(error);
-    res
-      .status(500)
-      .json({
-        success: false,
-        message: "An error occurred while deleting the user",
-      });
+    res.status(500).json({
+      success: false,
+      message: "An error occurred while deleting the user",
+    });
   }
 };
 
