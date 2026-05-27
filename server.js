@@ -1,5 +1,5 @@
 // require("dotenv").config();
-// require("./config/connectdb");
+// const connectDb = require("./config/connectdb"); // now a function
 // const express = require("express");
 // const cors = require("cors");
 
@@ -8,19 +8,21 @@
 // const classesRouter = require("./routes/classes-route");
 // const statsRouter = require("./routes/stats-route");
 
+// // Start connection in background (cached promise) – does not block
+// connectDb().catch(console.error);
+
 // const app = express();
 // const PORT = process.env.PORT || 5000;
 
 // // Middleware
 // app.use(express.json());
 
-// // ✅ CORS Configuration - Compatible with Express 5
+// // CORS Configuration
 // const allowedOrigins = ["http://localhost:5173"];
 
 // app.use(
 //   cors({
 //     origin: function (origin, callback) {
-//       // Allow requests with no origin (like mobile apps or curl)
 //       if (!origin) return callback(null, true);
 //       if (allowedOrigins.indexOf(origin) !== -1) {
 //         callback(null, true);
@@ -33,19 +35,21 @@
 //   }),
 // );
 
-// // 🧪 (Optional) Logging middleware for debugging
+// // Optional logging middleware
 // app.use((req, res, next) => {
-//   console.log(
-//     `${req.method} ${req.path} - Origin: ${req.headers.origin || "none"}`,
-//   );
+//   console.log(`${req.method} ${req.path} - Origin: ${req.headers.origin || "none"}`);
 //   next();
 // });
 
 // // Routes
 // app.use("/api/attendance", attendanceRouter);
+// app.use("/attendance", attendanceRouter); // Add this duplicate route
 // app.use("/api/auth", authRouter);
+// app.use("/auth", authRouter);   // add this line before the other routes
 // app.use("/api/classes", classesRouter);
+// app.use("/classes", classesRouter); // Add this duplicate route
 // app.use("/api/stats", statsRouter);
+// app.use("/stats", statsRouter); // Add this duplicate route
 
 // // Home route
 // app.get("/", (req, res) => {
@@ -59,22 +63,24 @@
 //   });
 // }
 
-// // ✅ For Vercel deployment
+// // For Vercel deployment
 // module.exports = app;
 
 
 
+
 require("dotenv").config();
-const connectDb = require("./config/connectdb"); // now a function
+const connectDb = require("./config/connectdb");
 const express = require("express");
 const cors = require("cors");
+const { addClient, removeClient, broadcastUpdate } = require("./utils/sse"); // ✅ import broadcastUpdate too
 
 const attendanceRouter = require("./routes/attendance-route");
 const authRouter = require("./routes/auth-route");
 const classesRouter = require("./routes/classes-route");
 const statsRouter = require("./routes/stats-route");
 
-// Start connection in background (cached promise) – does not block
+// Start DB connection
 connectDb().catch(console.error);
 
 const app = express();
@@ -85,7 +91,6 @@ app.use(express.json());
 
 // CORS Configuration
 const allowedOrigins = ["http://localhost:5173"];
-
 app.use(
   cors({
     origin: function (origin, callback) {
@@ -101,7 +106,7 @@ app.use(
   }),
 );
 
-// Optional logging middleware
+// Logging middleware
 app.use((req, res, next) => {
   console.log(`${req.method} ${req.path} - Origin: ${req.headers.origin || "none"}`);
   next();
@@ -109,23 +114,39 @@ app.use((req, res, next) => {
 
 // Routes
 app.use("/api/attendance", attendanceRouter);
-app.use("/attendance", attendanceRouter); // Add this duplicate route
+app.use("/attendance", attendanceRouter);
 app.use("/api/auth", authRouter);
-app.use("/auth", authRouter);   // add this line before the other routes
+app.use("/auth", authRouter);
 app.use("/api/classes", classesRouter);
-app.use("/classes", classesRouter); // Add this duplicate route
+app.use("/classes", classesRouter);
 app.use("/api/stats", statsRouter);
-app.use("/stats", statsRouter); // Add this duplicate route
+app.use("/stats", statsRouter);
 
 // Home route
 app.get("/", (req, res) => {
   res.send("Welcome to dashboard!");
 });
 
-// For local development
+// 🔥 SSE Setup
+app.get("/events", (req, res) => {
+  res.setHeader("Content-Type", "text/event-stream");
+  res.setHeader("Cache-Control", "no-cache");
+  res.setHeader("Connection", "keep-alive");
+
+  addClient(res);
+
+  res.write(`data: ${JSON.stringify({ message: "Connected to SSE" })}\n\n`);
+
+  req.on("close", () => {
+    removeClient(res);
+    res.end();
+  });
+});
+
+// Local dev
 if (process.env.NODE_ENV !== "production") {
   app.listen(PORT, () => {
-    console.log(`Server is running on port http://localhost:${PORT}`);
+    console.log(`Server running at http://localhost:${PORT}`);
   });
 }
 
