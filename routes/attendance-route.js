@@ -5,6 +5,9 @@ const attendanceController = require("../controllers/attendance.controller");
 // Create a new attendance record
 attendanceRouter.post("/", attendanceController.createAttendance);
 
+// Bulk create attendance records (e.g., for a week or month)
+attendanceRouter.post("/bulk", attendanceController.bulkCreateAttendance);
+
 // Get all attendance records
 attendanceRouter.get("/", attendanceController.getAttendances);
 

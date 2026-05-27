@@ -357,6 +357,45 @@ exports.createAttendance = async (req, res) => {
   }
 };
 
+// Bulk create multiple attendance records
+exports.bulkCreateAttendance = async (req, res) => {
+  try {
+    await ensureDb();
+    
+    const records = req.body;
+    if (!Array.isArray(records) || records.length === 0) {
+      return res.status(400).json({
+        success: false,
+        error: "Request body must be a non-empty array of attendance objects"
+      });
+    }
+
+    const created = [];
+    for (const item of records) {
+      const { day, present, absent, range } = item;
+      if (!day || present === undefined || absent === undefined || !range) {
+        return res.status(400).json({
+          success: false,
+          error: "Each record must have day, present, absent, range"
+        });
+      }
+      const attendance = new Attendance({ day, present, absent, range });
+      await attendance.save();
+      created.push({ day, present, absent, range });
+    }
+
+    res.status(201).json({
+      success: true,
+      message: `${created.length} attendance records created`,
+      data: created
+    });
+  } catch (error) {
+    console.error("Bulk create error:", error);
+    res.status(500).json({ success: false, error: "Server error" });
+  }
+};
+
+
 // GET /api/attendance?type=weekly   -> returns array for frontend chart
 exports.getAttendances = async (req, res) => {
   const { type } = req.query;
