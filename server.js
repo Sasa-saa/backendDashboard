@@ -19,7 +19,7 @@ const PORT = process.env.PORT || 5000;
 app.use(express.json());
 
 // CORS Configuration
-const allowedOrigins = ["http://localhost:5173"];
+const allowedOrigins = ['https://sasiffer-dashboard.vercel.app', 'http://localhost:5173'];
 app.use(
   cors({
     origin: function (origin, callback) {
