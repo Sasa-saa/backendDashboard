@@ -317,7 +317,7 @@ const statsRouter = require("./routes/stats-route");
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-// ========== MIDDLEWARE (order matters) ==========
+// ========== MIDDLEWARE ==========
 app.use(express.json());
 
 // CORS Configuration
@@ -325,20 +325,18 @@ const allowedOrigins = [
   'https://sasiffer-dashboard.vercel.app',
   'http://localhost:5173'
 ];
-app.use(
-  cors({
-    origin: function (origin, callback) {
-      if (!origin) return callback(null, true);
-      if (allowedOrigins.indexOf(origin) !== -1) {
-        callback(null, true);
-      } else {
-        callback(new Error("CORS policy: This origin is not allowed."));
-      }
-    },
-    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-    credentials: true,
-  })
-);
+app.use(cors({
+  origin: function (origin, callback) {
+    if (!origin) return callback(null, true);
+    if (allowedOrigins.indexOf(origin) !== -1) {
+      callback(null, true);
+    } else {
+      callback(new Error("CORS policy: This origin is not allowed."));
+    }
+  },
+  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+  credentials: true,
+}));
 
 // Logging middleware
 app.use((req, res, next) => {
@@ -346,14 +344,14 @@ app.use((req, res, next) => {
   next();
 });
 
+// ========== DEBUG ROUTES ==========
+app.get("/version", (req, res) => res.json({ version: "v3-dynamic", time: Date.now() }));
 
-// DIRECT TEST – bypasses authRouter entirely
+app.get("/ping", (req, res) => res.json({ pong: true, timestamp: Date.now() }));
+
 app.post("/api/auth/login-direct", (req, res) => {
   res.json({ message: "Direct login route works" });
 });
-
-// ========== HEALTH / DEBUG ROUTES ==========
-app.get("/ping", (req, res) => res.json({ pong: true, timestamp: Date.now() }));
 
 // ========== API ROUTES ==========
 app.use("/api/attendance", attendanceRouter);
@@ -383,33 +381,50 @@ app.get("/", (req, res) => {
   res.send("Welcome to dashboard!");
 });
 
-// ========== CATCH‑ALL 404 HANDLER (no pattern, just middleware) ==========
-// ✅ This works with Express 5 – placed after all legitimate routes
+// ========== DYNAMIC ROUTE LISTER (replaces hardcoded catch‑all) ==========
+// This endpoint shows all registered routes
+app.get("/debug/routes", (req, res) => {
+  const routes = [];
+  const collectRoutes = (stack, basePath = '') => {
+    stack.forEach((layer) => {
+      if (layer.route) {
+        const methods = Object.keys(layer.route.methods).join(',').toUpperCase();
+        routes.push(`${methods} ${basePath}${layer.route.path}`);
+      } else if (layer.name === 'router' && layer.handle.stack) {
+        // Get the base path from the router's regexp (simplified)
+        let routerPath = '';
+        if (layer.regexp) {
+          const pathStr = layer.regexp.source
+            .replace(/\\\//g, '/')
+            .replace(/\^/g, '')
+            .replace(/\?/g, '')
+            .replace(/\(\?:\(\[\^\/\]\+\?\)\)/g, ':param');
+          routerPath = pathStr;
+        }
+        collectRoutes(layer.handle.stack, basePath + routerPath);
+      }
+    });
+  };
+  collectRoutes(app._router.stack);
+  res.json({ registeredRoutes: routes });
+});
+
+// Catch‑all 404 (must be last)
 app.use((req, res) => {
   res.status(404).json({
     success: false,
     message: `Route ${req.method} ${req.path} not found`,
-    availableRoutes: [
-      "GET /ping",
-      "GET /",
-      "POST /api/auth/login",
-      "POST /api/auth/register",
-      "GET /events",
-      "GET /api/attendance",
-      "GET /api/classes",
-      "GET /api/stats"
-    ]
   });
 });
 
-// ========== INITIALIZE DATABASE (lazy, non‑blocking) ==========
+// ========== DATABASE INIT (lazy) ==========
 const connectDb = require("./config/connectdb");
 connectDb().catch(err => console.error("Initial DB connection error:", err));
 
 // ========== EXPORT FOR VERCEL ==========
 module.exports = app;
 
-// Local dev server (only when not on Vercel)
+// Local dev server
 if (process.env.NODE_ENV !== "production") {
   app.listen(PORT, () => {
     console.log(`Server running at http://localhost:${PORT}`);
