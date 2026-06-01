@@ -357,6 +357,8 @@ app.post("/api/auth/login-direct", (req, res) => {
 app.use("/api/attendance", attendanceRouter);
 app.use("/attendance", attendanceRouter);
 app.use("/api/auth", authRouter);
+console.log("authRouter:", authRouter);
+console.log("authRouter stack:", authRouter?.stack);
 app.use("/auth", authRouter);
 app.use("/api/classes", classesRouter);
 app.use("/classes", classesRouter);
