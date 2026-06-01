@@ -346,6 +346,12 @@ app.use((req, res, next) => {
   next();
 });
 
+
+// DIRECT TEST – bypasses authRouter entirely
+app.post("/api/auth/login-direct", (req, res) => {
+  res.json({ message: "Direct login route works" });
+});
+
 // ========== HEALTH / DEBUG ROUTES ==========
 app.get("/ping", (req, res) => res.json({ pong: true, timestamp: Date.now() }));
 
