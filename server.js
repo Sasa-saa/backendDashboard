@@ -15,31 +15,34 @@ const PORT = process.env.PORT || 5000;
 app.use(express.json());
 
 // CORS Configuration
-const allowedOrigins = [
-  'https://sasiffer-dashboard.vercel.app',
-  'http://localhost:5173'
-];
-app.use(cors({
-  origin: function (origin, callback) {
-    if (!origin) return callback(null, true);
-    if (allowedOrigins.indexOf(origin) !== -1) {
-      callback(null, true);
-    } else {
-      callback(new Error("CORS policy: This origin is not allowed."));
-    }
-  },
-  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-  credentials: true,
-}));
+const allowedOrigins = ["https://sasiffer-dashboard.vercel.app", "*"];
+app.use(
+  cors({
+    origin: function (origin, callback) {
+      if (!origin) return callback(null, true);
+      if (allowedOrigins.indexOf(origin) !== -1) {
+        callback(null, true);
+      } else {
+        callback(new Error("CORS policy: This origin is not allowed."));
+      }
+    },
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    credentials: true,
+  }),
+);
 
 // Logging middleware
 app.use((req, res, next) => {
-  console.log(`${req.method} ${req.path} - Origin: ${req.headers.origin || "none"}`);
+  console.log(
+    `${req.method} ${req.path} - Origin: ${req.headers.origin || "none"}`,
+  );
   next();
 });
 
 // ========== DEBUG ROUTES ==========
-app.get("/version", (req, res) => res.json({ version: "v3-dynamic", time: Date.now() }));
+app.get("/version", (req, res) =>
+  res.json({ version: "v3-dynamic", time: Date.now() }),
+);
 
 app.get("/ping", (req, res) => res.json({ pong: true, timestamp: Date.now() }));
 
@@ -81,20 +84,22 @@ app.get("/", (req, res) => {
 // This endpoint shows all registered routes
 app.get("/debug/routes", (req, res) => {
   const routes = [];
-  const collectRoutes = (stack, basePath = '') => {
+  const collectRoutes = (stack, basePath = "") => {
     stack.forEach((layer) => {
       if (layer.route) {
-        const methods = Object.keys(layer.route.methods).join(',').toUpperCase();
+        const methods = Object.keys(layer.route.methods)
+          .join(",")
+          .toUpperCase();
         routes.push(`${methods} ${basePath}${layer.route.path}`);
-      } else if (layer.name === 'router' && layer.handle.stack) {
+      } else if (layer.name === "router" && layer.handle.stack) {
         // Get the base path from the router's regexp (simplified)
-        let routerPath = '';
+        let routerPath = "";
         if (layer.regexp) {
           const pathStr = layer.regexp.source
-            .replace(/\\\//g, '/')
-            .replace(/\^/g, '')
-            .replace(/\?/g, '')
-            .replace(/\(\?:\(\[\^\/\]\+\?\)\)/g, ':param');
+            .replace(/\\\//g, "/")
+            .replace(/\^/g, "")
+            .replace(/\?/g, "")
+            .replace(/\(\?:\(\[\^\/\]\+\?\)\)/g, ":param");
           routerPath = pathStr;
         }
         collectRoutes(layer.handle.stack, basePath + routerPath);
@@ -115,7 +120,7 @@ app.use((req, res) => {
 
 // ========== DATABASE INIT (lazy) ==========
 const connectDb = require("./config/connectdb");
-connectDb().catch(err => console.error("Initial DB connection error:", err));
+connectDb().catch((err) => console.error("Initial DB connection error:", err));
 
 // ========== EXPORT FOR VERCEL ==========
 module.exports = app;
