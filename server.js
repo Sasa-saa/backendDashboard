@@ -15,8 +15,8 @@ const PORT = process.env.PORT || 5000;
 app.use(express.json());
 
 // CORS Configuration
-// const allowedOrigins = ["https://sasiffer-dashboard.vercel.app", "*"];
-const allowedOrigins = ["*"];
+const allowedOrigins = ["https://sasiffer-dashboard.vercel.app", "*"];
+// const allowedOrigins = ["*"];
 app.use(
   cors({
     origin: function (origin, callback) {
